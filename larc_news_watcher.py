@@ -155,8 +155,10 @@ def fetch_detail(url):
 def send_discord(article):
     webhook = os.environ.get("DISCORD_WEBHOOK")
 
+    # 環境変数が未設定の場合は何もしない（ユーザーの許可なしに送信しません）
     if not webhook:
-        raise Exception("DISCORD_WEBHOOK missing")
+        print("[DISCORD] webhook not set — skipping send (no action taken)")
+        return
 
     print("[DISCORD] send:", article["url"])
 
@@ -249,4 +251,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
