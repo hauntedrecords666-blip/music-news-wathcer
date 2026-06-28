@@ -24,8 +24,6 @@ jobs:
         run: python larc_news_watcher.py
         env:
           LARC_WEBHOOK: ${{ secrets.LARC_WEBHOOK }}
-          # 初回実行時に既存記事を通知したい場合は 1 にする（デフォルトはスキップ）
-          LARC_SEND_ON_INIT: "1"
 
       - name: update seen file
         run: |
@@ -39,3 +37,4 @@ jobs:
           git pull --rebase origin main
 
           git push
+
