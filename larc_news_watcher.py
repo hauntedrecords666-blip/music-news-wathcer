@@ -22,7 +22,19 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 def load_seen():
     try:
         with open(SEEN_FILE, encoding="utf-8") as f:
-            return set(json.load(f))
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                # CI や実行環境でファイルが破損していることがあるため、安全に扱う
+                print("[SEEN] warning: failed to parse SEEN_FILE, treating as empty:", SEEN_FILE)
+                return set()
+
+            # 正しい形式（リスト）であればセットに変換
+            if isinstance(data, list):
+                return set(data)
+            else:
+                print("[SEEN] warning: unexpected format in SEEN_FILE, expected JSON array. Resetting.")
+                return set()
     except FileNotFoundError:
         return set()
 
