@@ -85,9 +85,15 @@ def fetch_list(list_url=LIST_URL):
 
         # L'Arc-en-ciel サイトのニュースは /s/n137/news/ 以下にある想定
         if "/s/n137/news" in href:
-            full = urljoin(list_url, href)
-            # 完全なクエリを保持してもよいが、重複を避けるためパラメータはそのまま保存
-            urls.add(full)
+            # list ページやカテゴリページそのものは通知対象外にする
+            if "/s/n137/news/list" in href or re.search(r"/s/n137/news(?:/)?$", href):
+                continue
+
+            # detail ページか、URL のどこかに記事 ID が含まれているもののみを収集する
+            if "/detail/" in href or re.search(r"/news/(?:detail/)?(\d+)", href):
+                full = urljoin(list_url, href)
+                # 完全なクエリを保持してもよいが、重複を避けるためそのまま保存
+                urls.add(full)
 
     urls = list(urls)
 
