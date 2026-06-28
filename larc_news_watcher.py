@@ -153,7 +153,7 @@ def fetch_detail(url):
 # Discord送信
 # -------------------------
 def send_discord(article):
-    webhook = os.environ.get("DISCORD_WEBHOOK")
+    webhook = os.environ.get("LARC_WEBHOOK")
 
     # 環境変数が未設定の場合は何もしない（ユーザーの許可なしに送信しません）
     if not webhook:
