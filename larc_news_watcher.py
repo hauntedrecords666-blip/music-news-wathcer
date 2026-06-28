@@ -313,13 +313,17 @@ def main():
 
     print("[RESULT] candidates:", len(candidates))
 
-    # 初回スキップ
-    if not seen and candidates:
-        print("[INIT] skip mode")
+    # 初回スキップ: デフォルトでは既存記事大量通知を避ける
+    # ただし環境変数 LARC_SEND_ON_INIT を 1 にセットすると初回でも通知を行う
+    send_on_init = os.environ.get("LARC_SEND_ON_INIT") in ("1", "true", "True", "yes", "YES")
+    if not seen and candidates and not send_on_init:
+        print("[INIT] skip mode (no notifications to avoid spamming). Set LARC_SEND_ON_INIT=1 to override.")
         for a in candidates:
             seen.add(a["url"])
         save_seen(seen)
         return
+    if not seen and candidates and send_on_init:
+        print("[INIT] send_on_init enabled — sending notifications for initial candidates")
 
     # 通知
     for article in sorted(candidates, key=lambda x: extract_id(x["url"]) or 0):
