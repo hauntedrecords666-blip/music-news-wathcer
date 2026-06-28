@@ -124,8 +124,8 @@ def fetch_list(list_url=LIST_URL):
             # detail ページか、URL のどこかに記事 ID が含まれているもののみを収集する
             if "/detail/" in href or re.search(r"/news/(?:detail/)?(\d+)", href):
                 full = urljoin(list_url, href)
-                # 完全なクエリを保持してもよいが、重複を避けるためそのまま保存
-                urls.add(full)
+                # ima パラメータなどを取り除いて正規化して保存
+                urls.add(normalize_url(full))
 
     urls = list(urls)
 
@@ -224,9 +224,11 @@ def fetch_detail(url):
             if len(cand) > len(title):
                 title = cand
 
-    print("[DETAIL] OK:", url, "=>", title)
+    # 正規化した URL を返す（ima クエリを取り除く）
+    norm = normalize_url(url)
+    print("[DETAIL] OK:", norm, "=>", title)
 
-    return {"url": url, "title": title}
+    return {"url": norm, "title": title}
 
 
 # -------------------------
