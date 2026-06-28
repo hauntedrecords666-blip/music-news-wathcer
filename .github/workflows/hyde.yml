@@ -1,0 +1,39 @@
+name: HYDE NEWS WATCHER
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: run hyde watcher
+        run: python hyde_news_watcher.py
+        env:
+          HYDE_WEBHOOK: ${{ secrets.HYDE_WEBHOOK }}
+
+      - name: update seen file
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git add hyde_seen.json
+
+          git diff --cached --quiet || git commit -m "update hyde seen"
+
+          git pull --rebase origin main
+
+          git push
