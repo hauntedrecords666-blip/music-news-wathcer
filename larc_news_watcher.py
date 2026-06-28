@@ -3,12 +3,12 @@ import os
 import re
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, urlunparse, parse_qsl, urlencode
 
 
 LIST_URL = os.environ.get(
     "LARC_LIST_URL",
-    "https://larc-en-ciel.com/s/n137/news/list?ima=4247"
+    "https://larc-en-ciel.com/s/n137/news/list"
 )
 
 SEEN_FILE = os.environ.get("SEEN_FILE", "larc_seen.json")
@@ -31,7 +31,8 @@ def load_seen():
 
             # 正しい形式（リスト）であればセットに変換
             if isinstance(data, list):
-                return set(data)
+                # 正規化して返す（ima パラメータを除去するなど）
+                return set(normalize_url(u) for u in data if isinstance(u, str) and u)
             else:
                 print("[SEEN] warning: unexpected format in SEEN_FILE, expected JSON array. Resetting.")
                 return set()
@@ -74,6 +75,25 @@ def extract_id(url):
         return int(m.group(1))
 
     return None
+
+
+# -------------------------
+# URL 正規化: ima パラメータを取り除く
+# -------------------------
+def normalize_url(url):
+    if not url:
+        return url
+
+    try:
+        p = urlparse(url)
+        # クエリをパースして ima を除去
+        qs = parse_qsl(p.query, keep_blank_values=True)
+        qs = [(k, v) for (k, v) in qs if k != "ima"]
+        new_query = urlencode(qs, doseq=True)
+        new_p = p._replace(query=new_query)
+        return urlunparse(new_p)
+    except Exception:
+        return url
 
 
 # -------------------------
