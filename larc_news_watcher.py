@@ -127,16 +127,40 @@ def fetch_detail(url):
 
     soup = BeautifulSoup(r.text, "html.parser")
 
-    # 優先順: og:title -> h1 -> title
+    # 優先順: og:title -> twitter:title -> 各種タイトル要素(h1/.entry-title/h2) -> title
     title = None
+
+    # サイト名候補（不要なサフィックスを取り除くのに使う）
+    site_name = None
+    og_site = soup.find("meta", property="og:site_name")
+    if og_site and og_site.get("content"):
+        site_name = og_site.get("content").strip()
+
     og = soup.find("meta", property="og:title")
     if og and og.get("content"):
         title = og.get("content").strip()
 
     if not title:
-        h1 = soup.find("h1")
-        if h1:
-            title = h1.get_text(" ", strip=True)
+        tw = soup.find("meta", attrs={"name": "twitter:title"})
+        if tw and tw.get("content"):
+            title = tw.get("content").strip()
+
+    if not title:
+        # よく使われるクラス名を順に探す
+        selectors = [
+            ".entry-title",
+            ".article-title",
+            ".news_detail_title",
+            "h1",
+            "h2",
+        ]
+        for sel in selectors:
+            el = soup.select_one(sel)
+            if el:
+                txt = el.get_text(" ", strip=True)
+                if txt:
+                    title = txt
+                    break
 
     if not title:
         t = soup.find("title")
@@ -147,8 +171,26 @@ def fetch_detail(url):
         print("[DETAIL] title not found:", url)
         return None
 
-    # 不要なサフィックスがあれば取り除く（サイトのタイトル付きの場合）
-    title = re.sub(r"\s*[-|｜].*$", "", title).strip()
+    # サイト名や共通サフィックスを取り除く。過度に短くなってしまう一般的な区切り文字で切らない。
+    # まず明示的に取得した site_name を末尾に含めていれば削る
+    if site_name and title.endswith(site_name):
+        title = title[: -len(site_name)].strip(" -–—|｜:–—")
+
+    # 次に既知の一般的なサフィックスを除去（例: "Official Website" など）
+    for suf in ["Official Website", "Official site", "公式サイト", "L'Arc-en-Ciel Official Website"]:
+        if title.endswith(suf):
+            title = title[: -len(suf)].strip(" -–—|｜:–—")
+
+    # 最後の保険: もしタイトルが短すぎる（サイト名だけになってしまった等）なら
+    # ページ内のより大きな見出しを再探索して使う
+    if len(title) < 6:
+        # ページ上部の大きめのテキストを探す（h1,h2 のうち最長のもの）
+        headings = [h.get_text(" ", strip=True) for h in soup.select("h1, h2, h3") if h.get_text(strip=True)]
+        if headings:
+            # 長さで最も長い見出しを採用（記事タイトルの可能性が高い）
+            cand = max(headings, key=len)
+            if len(cand) > len(title):
+                title = cand
 
     print("[DETAIL] OK:", url, "=>", title)
 
