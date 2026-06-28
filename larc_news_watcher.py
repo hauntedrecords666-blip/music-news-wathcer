@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import tempfile
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, parse_qs, urlunparse, parse_qsl, urlencode
@@ -41,8 +42,25 @@ def load_seen():
 
 
 def save_seen(seen):
-    with open(SEEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(sorted(list(seen)), f, ensure_ascii=False, indent=2)
+    data = json.dumps(sorted(list(seen)), ensure_ascii=False, indent=2)
+
+    dir_name = os.path.dirname(SEEN_FILE) or "."
+    base_name = os.path.basename(SEEN_FILE)
+
+    fd, tmp_path = tempfile.mkstemp(prefix=f".{base_name}.", dir=dir_name, text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(data)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, SEEN_FILE)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 # -------------------------
